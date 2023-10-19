@@ -9,7 +9,7 @@ load_dotenv()
 class SlackClient:
 
     def __init__(self):
-        self.token = os.getenv("SLACK_TOKEN", "https://api.courier.com/")
+        self.token = os.getenv("SLACK_TOKEN", "")
 
     def send(self, text, channel, blocks=None):
         return requests.post('https://slack.com/api/chat.postMessage', {
