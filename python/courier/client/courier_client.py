@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 import requests
@@ -72,5 +73,52 @@ class CourierClient:
             "Authorization": f'Authorization: Bearer {self.bearer_token}'
         }
 
-    def send(self):
-        pass
+    def is_valid_template(self, template_id):
+        return template_id in self.templates
+
+    def send(self, email, template_id, data, attachment):
+        payload = {
+            "message": {
+                "routing": {
+                    "method": "single",
+                    "channels": ["email"],
+                },
+                "template": template_id,
+                "to": {
+                    "email": email
+                },
+                "data": data,
+            },
+        }
+
+        if attachment:
+            content = base64.b64encode(bytes(attachment.get("content"), 'utf-8')).decode('utf-8')
+            payload['message']['providers'] = {
+                "smtp": {
+                    "override": {
+                        "body": {
+                            "attachments": [
+                                {
+                                    "filename": attachment.get("file_name"),
+                                    "content": content,
+                                    "encoding": attachment.get("encoding")
+                                }
+                            ]
+                        },
+                    }
+                }
+            }
+            payload['message']['channels'] = {
+                "email": {
+                    "override": {
+                        "attachments": [
+                            {
+                                "filename": "report.csv",
+                                "contentType": attachment.get("content_type"),
+                                "data": content
+                            }
+                        ]
+                    }
+                }
+            }
+        return requests.request("POST", self.url + "send", json=payload, headers=self._get_headers())
